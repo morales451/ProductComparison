@@ -2,6 +2,20 @@
 
 AI-Powered Roof Coating Specification Comparison Tool
 
+---
+
+## 🚀 Quick Start (For Beginners)
+
+**New to deployment?** Start here:
+
+- **📖 [START_HERE.md](START_HERE.md)** - Complete beginner guide (10 minutes)
+- **⚡ [DEPLOY_NOW.md](DEPLOY_NOW.md)** - Copy/paste deployment (5 minutes)
+- **🤖 Interactive helper**: Run `python deploy_helper.py`
+
+**Experienced developers?** Continue reading below for technical details.
+
+---
+
 ## Overview
 
 RoofSpec Matcher is a Streamlit-based application that uses Large Language Models (LLMs) to intelligently extract and compare technical specifications from roof coating product documents. Upload a reference specification and multiple candidate product sheets to get an instant AI-powered comparison.

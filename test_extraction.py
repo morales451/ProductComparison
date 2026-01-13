@@ -78,7 +78,12 @@ def parse_with_llm(text: str, doc_name: str, client, provider: str):
 
     system_prompt = """You are a technical data extraction specialist for the roof coating and construction materials industry.
 
-Your task is to extract technical specifications from roof coating product documentation. You MUST be flexible with terminology - different manufacturers use different wording for the same metrics.
+Your task is to extract technical specifications from roof coating documents. You MUST be flexible with terminology - different manufacturers use different wording for the same metrics.
+
+**IMPORTANT: This tool handles TWO types of documents:**
+
+1. **PRODUCT DATA SHEETS** - Actual specifications (e.g., "Tensile Strength: 500 psi")
+2. **JOB SPECIFICATIONS** - Required minimums (e.g., "Minimum tensile strength of 300 psi")
 
 **CRITICAL: FLEXIBLE MATCHING RULES**
 
@@ -118,19 +123,28 @@ You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of
 - "Permeability" = "Perm Rating" = "Perms" = "Water Vapor Permeability" = "Perm" = "Permeance"
 → Output as: "Permeability"
 
+**HANDLING JOB SPECIFICATIONS (Requirement Documents):**
+
+Job specs use requirement language. Extract with "min"/"max" prefixes:
+- "Minimum tensile strength of 300 psi" → "Tensile Strength: min 300 psi"
+- "Solar reflectance at least 0.80" → "Solar Reflectance: min 0.80"
+- "VOC not to exceed 50 g/L" → "VOC Content: max 50 g/L"
+
 **INSTRUCTIONS:**
 
 1. **SEMANTIC MATCHING**: Look for variations in word order, synonyms, and abbreviations.
 
-2. **Initial vs Aged**: If a document says "Initial Solar Reflectance", output it as "Solar Reflectance (Initial)". If it just says "Solar Reflectance", output as "Solar Reflectance".
+2. **Initial vs Aged**: If a document says "Initial Solar Reflectance", output it as "Solar Reflectance (Initial)".
 
 3. **Always include units**: Extract and include the units (psi, %, perms, etc.).
 
-4. **Search thoroughly**: Check tables, bullet points, specifications sections, AND inline text.
+4. **Detect document type**: If you see "minimum"/"shall be"/"at least" → it's a JOB SPEC, use "min" prefix
 
-5. **Return normalized JSON**: Use the standardized names from the variations list above as keys
+5. **Search thoroughly**: Check tables, bullet points, AND inline text.
 
-6. **Missing data**: If you genuinely cannot find a metric, do NOT include it in the JSON.
+6. **Return normalized JSON**: Product data as-is, job specs with "min"/"max" prefix
+
+7. **Missing data**: If you genuinely cannot find a metric, do NOT include it in the JSON.
 
 Extract the data and return ONLY valid JSON. No additional text, explanation, or markdown formatting."""
 

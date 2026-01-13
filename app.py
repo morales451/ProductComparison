@@ -104,7 +104,12 @@ ROOF_COATING_METRICS = [
 
 SYSTEM_PROMPT = """You are a technical data extraction specialist for the roof coating and construction materials industry.
 
-Your task is to extract technical specifications from roof coating product documentation. You MUST be flexible with terminology - different manufacturers use different wording for the same metrics.
+Your task is to extract technical specifications from roof coating documents. You MUST be flexible with terminology - different manufacturers use different wording for the same metrics.
+
+**IMPORTANT: This tool handles TWO types of documents:**
+
+1. **PRODUCT DATA SHEETS** - Actual specifications (e.g., "Tensile Strength: 500 psi")
+2. **JOB SPECIFICATIONS** - Required minimums (e.g., "Minimum tensile strength of 300 psi" or "shall meet or exceed 300 psi")
 
 **CRITICAL: FLEXIBLE MATCHING RULES**
 
@@ -181,6 +186,51 @@ You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of
 - "SRI" = "Solar Reflectance Index" = "Solar Reflective Index"
 → Output as: "SRI"
 
+**HANDLING JOB SPECIFICATIONS (Requirement Documents):**
+
+Job specifications use REQUIREMENT LANGUAGE instead of stating actual values. You MUST recognize and extract these properly.
+
+**Requirement Keywords to Recognize:**
+- "minimum" / "min" / "at least" / "not less than"
+- "maximum" / "max" / "not more than" / "not to exceed"
+- "shall be" / "must be" / "should be"
+- "meets or exceeds" / "equal to or greater than"
+- "complies with" / "in accordance with"
+
+**How to Extract from Job Specs:**
+
+1. **Minimum Requirements** - Extract with "min" prefix:
+   - "Minimum tensile strength of 300 psi" → Output: "Tensile Strength: min 300 psi"
+   - "Solar reflectance shall be at least 0.80" → Output: "Solar Reflectance: min 0.80"
+   - "Elongation not less than 400%" → Output: "Elongation: min 400%"
+
+2. **Maximum Requirements** - Extract with "max" prefix:
+   - "VOC content not to exceed 50 g/L" → Output: "VOC Content: max 50 g/L"
+   - "Maximum permeability of 0.5 perms" → Output: "Permeability: max 0.5 perms"
+
+3. **Exact Requirements** - Extract without prefix:
+   - "Solar reflectance shall be 0.85" → Output: "Solar Reflectance: 0.85"
+
+4. **Referenced Products** - Extract if mentioned:
+   - "Use [Manufacturer X Product Y] or approved equal"
+   - Look for metrics associated with that product name in the document
+
+**Examples of Job Spec Extraction:**
+
+Input text: "The coating shall have a minimum initial tensile strength of 300 psi and minimum initial elongation of 500%."
+Output JSON:
+{
+  "Tensile Strength (Initial)": "min 300 psi",
+  "Elongation (Initial)": "min 500%"
+}
+
+Input text: "Solar reflectance not less than 0.80, thermal emittance of at least 0.85"
+Output JSON:
+{
+  "Solar Reflectance": "min 0.80",
+  "Thermal Emittance": "min 0.85"
+}
+
 **INSTRUCTIONS:**
 
 1. **SEMANTIC MATCHING**: Look for variations in word order, synonyms, and abbreviations. If you see ANY variation of a metric name, extract it and normalize to the standard name above.
@@ -191,14 +241,24 @@ You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of
 
 4. **Handle ranges**: Keep ranges intact: "50-60%" or "400-600 psi"
 
-5. **Search thoroughly**: Check tables, bullet points, specifications sections, AND inline text. A metric might be written as "Initial % Elongation: 500%" in a table or "The initial percent elongation is 500%" in text.
+5. **Detect document type automatically**:
+   - If you see requirement language ("minimum", "shall be", "at least"), it's a JOB SPEC → use "min"/"max" prefixes
+   - If you see actual values without requirement language, it's a PRODUCT DATA SHEET → use values as-is
+   - You may encounter BOTH types in one document!
 
-6. **Return normalized JSON**: Use the standardized names from the variations list above as keys
-   Example: {"Tensile Strength (Initial)": "500 psi", "Elongation (Initial)": "300%", "Solar Reflectance": "0.85"}
+6. **Search thoroughly**: Check tables, bullet points, specifications sections, AND inline text. Requirements might be in paragraphs like "The coating shall have a minimum tensile strength of 300 psi" or in tables.
 
-7. **Missing data**: If you genuinely cannot find a metric after thorough searching, do NOT include it in the JSON.
+7. **Return normalized JSON**: Use the standardized names from the variations list above as keys
 
-8. **Be flexible but accurate**: Extract the value that's actually there, but normalize the metric name for consistency.
+   Product Data Sheet Example:
+   {"Tensile Strength (Initial)": "500 psi", "Elongation (Initial)": "300%", "Solar Reflectance": "0.85"}
+
+   Job Specification Example:
+   {"Tensile Strength (Initial)": "min 300 psi", "Elongation (Initial)": "min 400%", "Solar Reflectance": "min 0.80"}
+
+8. **Missing data**: If you genuinely cannot find a metric after thorough searching, do NOT include it in the JSON.
+
+9. **Be flexible but accurate**: Extract the value that's actually there, but normalize the metric name for consistency. Preserve requirement indicators (min/max) when present.
 
 Extract the data and return ONLY valid JSON. No additional text, explanation, or markdown formatting."""
 
@@ -539,7 +599,7 @@ def main():
         "Upload the master specification document",
         type=['pdf'],
         key="reference",
-        help="This is the target specification you want to match"
+        help="Upload a product data sheet OR job specification with requirements (e.g., 'minimum 300 psi')"
     )
 
     # Candidate documents upload
@@ -549,7 +609,7 @@ def main():
         type=['pdf'],
         accept_multiple_files=True,
         key="candidates",
-        help="Upload one or more product spec sheets to compare"
+        help="Upload one or more product spec sheets to compare against the reference"
     )
 
     # Analysis button
@@ -688,8 +748,12 @@ def main():
 
             This tool helps you compare roof coating product specifications against a reference document.
 
+            **Supports TWO use cases:**
+            - **Product vs Product**: Compare product data sheets against each other
+            - **Job Spec vs Products**: Upload a job specification (with "minimum" requirements) and see which products meet or exceed those specs
+
             **How to use:**
-            1. Upload your reference/spec document in the sidebar
+            1. Upload your reference document (product data sheet OR job spec) in the sidebar
             2. Upload one or more candidate product documents
             3. Click "Analyze & Compare" to start the AI-powered analysis
 

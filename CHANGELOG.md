@@ -1,5 +1,112 @@
 # RoofSpec Matcher - Changelog
 
+## Version 1.2.0 (2026-01-13) - Job Specification Support
+
+### 🎯 Major New Feature: Job Specification Extraction
+
+**New Capability:** The tool now extracts requirements from job specifications in addition to product data sheets!
+
+**Use Cases Enabled:**
+- ✅ Upload a job spec as reference → See which products meet or exceed requirements
+- ✅ Compare products against "minimum" and "maximum" requirements
+- ✅ Verify "or equal" product substitutions
+- ✅ Quick qualification checks for bidding
+
+### 🔧 Changes
+
+#### Enhanced Extraction for Two Document Types
+
+**1. Product Data Sheets (Original)**
+- Extracts actual values: "Tensile Strength: 500 psi"
+- Output: `{"Tensile Strength": "500 psi"}`
+
+**2. Job Specifications (NEW)**
+- Extracts requirements: "Minimum tensile strength of 300 psi"
+- Output: `{"Tensile Strength": "min 300 psi"}`
+- Recognizes requirement language: "minimum", "shall be", "at least", "not less than", "not to exceed"
+
+#### Requirement Keywords Supported
+
+**Minimum Requirements:**
+- "minimum" / "min" / "at least" / "not less than"
+- "shall be" / "must be" / "should be"
+- "meets or exceeds"
+
+**Maximum Requirements:**
+- "maximum" / "max" / "not more than" / "not to exceed"
+
+#### Examples
+
+**Input:** "The coating shall have a minimum initial tensile strength of 300 psi"
+**Output:** `{"Tensile Strength (Initial)": "min 300 psi"}`
+
+**Input:** "Solar reflectance not less than 0.80"
+**Output:** `{"Solar Reflectance": "min 0.80"}`
+
+**Input:** "VOC content not to exceed 50 g/L"
+**Output:** `{"VOC Content": "max 50 g/L"}`
+
+### 📝 Technical Details
+
+**Files Modified:**
+- `app.py` - Added job spec handling to SYSTEM_PROMPT (lines 109-232)
+- `test_extraction.py` - Added abbreviated job spec handling
+- UI updated to mention both document types
+
+**New Files:**
+- `JOB_SPEC_GUIDE.md` - Comprehensive guide for using job specifications (91KB)
+
+**Key Prompt Changes:**
+- Added "HANDLING JOB SPECIFICATIONS" section
+- Automatic document type detection
+- Requirement indicator preservation (min/max prefixes)
+- Instructions for extracting from requirement language
+- Examples of both document types
+
+### 🎯 Usage
+
+**Compare Products Against Job Spec:**
+1. Upload job specification PDF as Reference
+2. Upload product data sheets as Candidates
+3. Click "Analyze & Compare"
+4. See which products meet minimum requirements
+
+**Reading Results:**
+- **Job Spec**: "min 300 psi"
+- **Product A**: "500 psi" ✅ (Exceeds minimum)
+- **Product B**: "280 psi" ❌ (Below minimum)
+- **Product C**: (empty) ❓ (No data)
+
+### 📊 Impact
+
+**Before v1.2:**
+- Could only compare product data sheets
+- Job specifications couldn't be processed
+- Had to manually check requirements
+
+**After v1.2:**
+- ✅ Automatic requirement extraction
+- ✅ Clear min/max indicators
+- ✅ Side-by-side requirement vs actual comparison
+- ✅ AI summary identifies compliance gaps
+
+### 🧪 Testing
+
+Users should test with:
+1. A job specification with "minimum" requirements
+2. Multiple product data sheets
+3. Verify the comparison shows requirements vs actual values
+
+### 📚 Documentation
+
+See `JOB_SPEC_GUIDE.md` for:
+- Complete usage instructions
+- Common scenarios and workflows
+- Tips for best results
+- FAQ and troubleshooting
+
+---
+
 ## Version 1.1.0 (2026-01-13) - Flexible Terminology Matching
 
 ### 🎯 Major Improvement: Semantic Matching

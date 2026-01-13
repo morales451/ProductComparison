@@ -78,12 +78,61 @@ def parse_with_llm(text: str, doc_name: str, client, provider: str):
 
     system_prompt = """You are a technical data extraction specialist for the roof coating and construction materials industry.
 
-Extract all roof coating technical specifications and return them as a JSON object.
-Focus on metrics like: Elongation, Tensile Strength, Volume Solids, Weight Solids, Permeability,
-Solar Reflectance, Thermal Emittance, Viscosity, Low Temperature Flexibility, etc.
+Your task is to extract technical specifications from roof coating product documentation. You MUST be flexible with terminology - different manufacturers use different wording for the same metrics.
 
-CRITICAL: Always include units with values (e.g., "500 psi" not just "500").
-Return ONLY valid JSON. No additional text."""
+**CRITICAL: FLEXIBLE MATCHING RULES**
+
+You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of metrics, not exact phrases.
+
+**TERMINOLOGY VARIATIONS - Treat these as THE SAME metric:**
+
+**Elongation variations:**
+- "Elongation (Initial)" = "Initial Elongation" = "Initial Percent Elongation" = "Elongation - Initial" = "Initial % Elongation"
+- "Elongation (Aged)" = "Aged Elongation" = "Aged Percent Elongation" = "Elongation - Aged"
+- "Elongation at Break" = "Elongation %" = "Percent Elongation" = "% Elongation"
+→ Output as: "Elongation (Initial)", "Elongation (Aged)", or "Elongation at Break"
+
+**Tensile Strength variations:**
+- "Tensile Strength (Initial)" = "Initial Tensile Strength" = "Initial Tensile" = "Tensile - Initial"
+- "Tensile Strength (Aged)" = "Aged Tensile Strength" = "Aged Tensile" = "Tensile - Aged"
+- "Tensile Strength" = "Tensile" = "Ultimate Tensile Strength"
+→ Output as: "Tensile Strength (Initial)", "Tensile Strength (Aged)", or "Tensile Strength"
+
+**Solar Reflectance variations:**
+- "Solar Reflectance (Initial)" = "Initial Solar Reflectance" = "Solar Reflectance - Initial" = "Initial Reflectance"
+- "Solar Reflectance (Aged)" = "Aged Solar Reflectance" = "Solar Reflectance - Aged" = "Aged Reflectance"
+- "Solar Reflectance" = "Reflectance" = "Solar Reflectivity" = "Reflectivity (Solar)"
+→ Output as: "Solar Reflectance (Initial)", "Solar Reflectance (Aged)", or "Solar Reflectance"
+
+**Thermal Emittance variations:**
+- "Thermal Emittance" = "Emittance" = "Emissivity" = "Thermal Emissivity" = "IR Emittance"
+- "Thermal Emittance (Initial)" = "Initial Emittance" = "Initial Thermal Emittance"
+→ Output as: "Thermal Emittance (Initial)", "Thermal Emittance (Aged)", or "Thermal Emittance"
+
+**Solids variations:**
+- "Volume Solids" = "Vol Solids" = "Solids by Volume" = "% Volume Solids" = "Percent Volume Solids"
+- "Weight Solids" = "Wt Solids" = "Solids by Weight" = "% Weight Solids" = "Percent Weight Solids"
+→ Output as: "Volume Solids" or "Weight Solids"
+
+**Permeability variations:**
+- "Permeability" = "Perm Rating" = "Perms" = "Water Vapor Permeability" = "Perm" = "Permeance"
+→ Output as: "Permeability"
+
+**INSTRUCTIONS:**
+
+1. **SEMANTIC MATCHING**: Look for variations in word order, synonyms, and abbreviations.
+
+2. **Initial vs Aged**: If a document says "Initial Solar Reflectance", output it as "Solar Reflectance (Initial)". If it just says "Solar Reflectance", output as "Solar Reflectance".
+
+3. **Always include units**: Extract and include the units (psi, %, perms, etc.).
+
+4. **Search thoroughly**: Check tables, bullet points, specifications sections, AND inline text.
+
+5. **Return normalized JSON**: Use the standardized names from the variations list above as keys
+
+6. **Missing data**: If you genuinely cannot find a metric, do NOT include it in the JSON.
+
+Extract the data and return ONLY valid JSON. No additional text, explanation, or markdown formatting."""
 
     user_prompt = f"""Document Name: {doc_name}
 

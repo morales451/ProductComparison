@@ -326,6 +326,125 @@ Documents may use ranges for values (e.g., "50-54%") while specifications may st
 
 9. **Be flexible but accurate**: Extract the value that's actually there, but normalize the metric name for consistency. Preserve requirement indicators (min/max) when present.
 
+**ADVANCED TABLE PARSING (Critical for Product Data Sheets):**
+
+Documents often contain multiple tables with data spread across pages. Follow these rules carefully:
+
+**Rule 1: MULTI-TABLE ITERATION (Scan Entire Document)**
+
+Problem: Data is often split across multiple tables on the same page or different pages.
+
+Solution:
+- DO NOT stop after finding the first table
+- Scan the ENTIRE document for ALL tables
+- Merge results from all tables into a single JSON object
+- If the same property appears in multiple tables, use the most specific/detailed value
+
+Example: Page 2 has 4 separate tables with different properties
+→ Extract from ALL 4 tables and combine into one result
+
+**Rule 2: COLUMN PRIORITIZATION (Use Actual Values, Not Minimums)**
+
+Problem: Tables often have BOTH "Specification/Minimum" columns AND "Test Values/Results" columns.
+
+Solution - Column Priority (use in this order):
+1. ALWAYS prefer columns with headers: "Test Values", "Test Value", "Typical Value", "Result", "Actual", "Measured"
+2. IGNORE columns with headers: "Minimum", "Specification", "Requirement", "ASTM Minimum", "Min"
+
+Critical Example:
+```
+Property          | ASTM Minimum | Test Value
+Volume Solids     | ≥50%         | 53%
+```
+→ Extract: {"Volume Solids": "53%"} ✅
+→ NOT: {"Volume Solids": "≥50%"} ❌
+→ NOT: {"Volume Solids": "250%"} ❌ (OCR error)
+
+**Rule 3: OCR ERROR CORRECTION (Fuzzy Matching)**
+
+Problem: PDF text extraction contains typos and OCR errors.
+
+Solution: Recognize and correct common OCR errors:
+
+**Common OCR Errors:**
+- "Valume Solids" → "Volume Solids"
+- "Permanence" → "Permeance" (also means Permeability)
+- "Share A" → "Shore A" (hardness unit)
+- "Tenslle" → "Tensile"
+- "Elongatlon" → "Elongation"
+- "Reflectence" → "Reflectance"
+- "Emlttance" → "Emittance"
+- "Vlscosity" → "Viscosity"
+- "≥" might appear as "Z" or "2" (greater than or equal)
+- Numbers: "1" vs "l", "0" vs "O", "5" vs "S"
+
+Strategy:
+- If you see a property name that's 1-2 characters different from a known property, treat it as that property
+- Look for context clues (units, nearby properties) to confirm
+
+**Rule 4: HEADER-BASED PROPERTY EXTRACTION (CRRC-Style Tables)**
+
+Problem: In some tables (esp. CRRC data), the PROPERTY NAME is the COLUMN HEADER, not the row label.
+
+Solution: Recognize this pattern:
+
+```
+Table:
+               | Solar Reflectance | Thermal Emittance | SRI
+Initial        | 0.83             | 0.90              | 108
+Aged (3 years) | 0.75             | 0.88              | 95
+```
+
+In this format:
+- Column Headers = Property Names ("Solar Reflectance", "Thermal Emittance")
+- Row Labels = Conditions ("Initial", "Aged")
+
+Extract as:
+{
+  "Solar Reflectance (Initial)": "0.83",
+  "Solar Reflectance (Aged)": "0.75",
+  "Thermal Emittance (Initial)": "0.90",
+  "Thermal Emittance (Aged)": "0.88",
+  "SRI (Initial)": "108",
+  "SRI (Aged)": "95"
+}
+
+Pattern Recognition:
+- If row labels are time periods ("Initial", "Aged", "After 3 years"), then columns are properties
+- If first column has property names, then columns are different measurements
+
+**Rule 5: SPARSE TABLE HANDLING (Empty Columns)**
+
+Problem: Some table rows have empty/null columns in the middle.
+
+Solution:
+
+```
+Property              | Test Method | Value
+Volume Solids         |             | 53%
+Tensile Strength      | ASTM D 2370 | 284 psi
+```
+
+If a row has 3 columns and the middle one is empty:
+- Column 1 = Property Name
+- Column 2 = Empty (ignore)
+- Column 3 = Value
+
+DO NOT shift the value left. The empty column is intentional (test method not listed).
+
+Extract: {"Volume Solids": "53%"} ✅
+
+**APPLYING THESE RULES:**
+
+When extracting from a product data sheet:
+1. Scan ALL tables in the document (don't stop at first)
+2. For each table, identify the column structure
+3. Find the "Test Values" or "Results" column (ignore "Minimum" columns)
+4. Correct any OCR errors in property names
+5. Check if table uses header-based properties (CRRC style)
+6. Handle empty columns correctly
+7. Merge all extracted data into final JSON
+
 Extract the data and return ONLY valid JSON. No additional text, explanation, or markdown formatting."""
 
 # ===================== HELPER FUNCTIONS =====================

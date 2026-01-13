@@ -153,6 +153,14 @@ Scan 2-3 lines ahead when you find a property keyword.
 
 7. **Missing data**: If you genuinely cannot find a metric, do NOT include it in the JSON.
 
+**ADVANCED TABLE PARSING:**
+
+- **Multi-Table**: Scan ALL tables in document, merge results
+- **Column Priority**: Use "Test Value"/"Result" columns, ignore "Minimum"/"Specification" columns
+- **OCR Errors**: Correct typos: "Valume"→"Volume", "Permanence"→"Permeance", "Share A"→"Shore A"
+- **CRRC Tables**: If rows are "Initial"/"Aged", then column headers are property names
+- **Sparse Tables**: If middle column empty, column 3 is still the value
+
 Extract the data and return ONLY valid JSON. No additional text, explanation, or markdown formatting."""
 
     user_prompt = f"""Document Name: {doc_name}

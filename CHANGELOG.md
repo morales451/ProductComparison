@@ -1,5 +1,90 @@
 # RoofSpec Matcher - Changelog
 
+## Version 1.2.2 (2026-01-13) - Advanced Table Parsing
+
+### 🎯 Critical Improvement: Multi-Table & Column-Aware Extraction
+
+**Problem Solved:** Product data sheets with complex table layouts were not being fully extracted. Based on real-world testing, added 5 critical table parsing improvements.
+
+**User Feedback Implemented:**
+1. Multi-table iteration (scan entire document, not just first table)
+2. Column prioritization (use "Test Values", ignore "Minimum" columns)
+3. OCR error correction (fuzzy matching for common typos)
+4. Header-based property extraction (CRRC-style tables)
+5. Sparse table handling (empty middle columns)
+
+### 🔧 Changes
+
+#### 1. Multi-Table Iteration (NEW)
+
+**Problem:**
+Data split across 4 separate tables on Page 2 → Only first table was extracted
+
+**Solution:**
+- AI now scans ENTIRE document for ALL tables
+- Merges results from all tables into single JSON
+- If same property in multiple tables, uses most specific value
+
+**Example:**
+Page 2 has 4 tables (Physical, Chemical, Performance, CRRC) → All extracted and merged ✅
+
+#### 2. Column Prioritization (NEW)
+
+**Problem:**
+Tables have BOTH "ASTM Minimum" and "Test Value" columns → Wrong column extracted
+
+**Solution:**
+Priority order: "Test Values" > "Typical Value" > "Result"
+IGNORE: "Minimum", "Specification", "Requirement"
+
+**Example:**
+```
+Property       | ASTM Minimum | Test Value
+Volume Solids  | ≥50%         | 53%
+```
+Extracts: "53%" ✅ (not "≥50%")
+
+#### 3. OCR Error Correction (NEW)
+
+**Problem:**
+PDF typos: "Valume Solids", "Permanence", "Share A"
+
+**Solution:**
+Corrects: "Valume"→"Volume", "Permanence"→"Permeance", "Share A"→"Shore A", and 7+ more
+
+#### 4. Header-Based Property Extraction (NEW)
+
+**Problem:**
+CRRC tables have properties as COLUMN HEADERS → Missed
+
+**Solution:**
+```
+              | Solar Reflectance | Thermal Emittance
+Initial       | 0.83             | 0.90
+Aged          | 0.75             | 0.88
+```
+Extracts: "Solar Reflectance (Initial): 0.83" ✅
+
+#### 5. Sparse Table Handling (NEW)
+
+**Problem:**
+Empty middle columns cause misalignment
+
+**Solution:**
+Correctly handles 3-column tables with empty middle column
+
+### 📝 Technical Details
+
+**Files Modified:**
+- `app.py` - Added 120+ lines "ADVANCED TABLE PARSING" section
+- `test_extraction.py` - Added condensed version
+
+**Impact:**
+Before: Partial extraction from first table only
+After: Complete extraction from all tables with correct column prioritization
+
+---
+
 ## Version 1.2.1 (2026-01-13) - Real-World Spec Improvements
 
 ### 🎯 Major Improvement: Enhanced Real-World Document Handling

@@ -92,35 +92,24 @@ You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of
 **TERMINOLOGY VARIATIONS - Treat these as THE SAME metric:**
 
 **Elongation variations:**
-- "Elongation (Initial)" = "Initial Elongation" = "Initial Percent Elongation" = "Elongation - Initial" = "Initial % Elongation"
-- "Elongation (Aged)" = "Aged Elongation" = "Aged Percent Elongation" = "Elongation - Aged"
-- "Elongation at Break" = "Elongation %" = "Percent Elongation" = "% Elongation"
+- "Elongation (Initial)" = "Initial Elongation" = "Initial Percent Elongation" = "Elongation, Initial" = "Percent Elongation at break"
 → Output as: "Elongation (Initial)", "Elongation (Aged)", or "Elongation at Break"
 
 **Tensile Strength variations:**
-- "Tensile Strength (Initial)" = "Initial Tensile Strength" = "Initial Tensile" = "Tensile - Initial"
-- "Tensile Strength (Aged)" = "Aged Tensile Strength" = "Aged Tensile" = "Tensile - Aged"
-- "Tensile Strength" = "Tensile" = "Ultimate Tensile Strength"
+- "Tensile Strength (Initial)" = "Initial Tensile Strength" = "Initial Tensile" = "Tensile Strength, Initial"
 → Output as: "Tensile Strength (Initial)", "Tensile Strength (Aged)", or "Tensile Strength"
 
 **Solar Reflectance variations:**
-- "Solar Reflectance (Initial)" = "Initial Solar Reflectance" = "Solar Reflectance - Initial" = "Initial Reflectance"
-- "Solar Reflectance (Aged)" = "Aged Solar Reflectance" = "Solar Reflectance - Aged" = "Aged Reflectance"
-- "Solar Reflectance" = "Reflectance" = "Solar Reflectivity" = "Reflectivity (Solar)"
+- "Solar Reflectance" = "Reflectance" = "Solar Reflectivity" = "Reflectivity" = "Solar Reflectance, Initial"
 → Output as: "Solar Reflectance (Initial)", "Solar Reflectance (Aged)", or "Solar Reflectance"
 
-**Thermal Emittance variations:**
-- "Thermal Emittance" = "Emittance" = "Emissivity" = "Thermal Emissivity" = "IR Emittance"
-- "Thermal Emittance (Initial)" = "Initial Emittance" = "Initial Thermal Emittance"
-→ Output as: "Thermal Emittance (Initial)", "Thermal Emittance (Aged)", or "Thermal Emittance"
-
 **Solids variations:**
-- "Volume Solids" = "Vol Solids" = "Solids by Volume" = "% Volume Solids" = "Percent Volume Solids"
-- "Weight Solids" = "Wt Solids" = "Solids by Weight" = "% Weight Solids" = "Percent Weight Solids"
+- "Volume Solids" = "Vol Solids" = "Solids by Volume" = "Solids Content by Volume" = "% Solids by Vol" = "Solids, by volume"
+- "Weight Solids" = "Wt Solids" = "Solids by Weight" = "Solids Content by Weight" = "% Solids by Wt" = "Solids, by weight"
 → Output as: "Volume Solids" or "Weight Solids"
 
 **Permeability variations:**
-- "Permeability" = "Perm Rating" = "Perms" = "Water Vapor Permeability" = "Perm" = "Permeance"
+- "Permeability" = "Perm Rating" = "Perms" = "Water Vapor Permeability"
 → Output as: "Permeability"
 
 **HANDLING JOB SPECIFICATIONS (Requirement Documents):**
@@ -129,6 +118,24 @@ Job specs use requirement language. Extract with "min"/"max" prefixes:
 - "Minimum tensile strength of 300 psi" → "Tensile Strength: min 300 psi"
 - "Solar reflectance at least 0.80" → "Solar Reflectance: min 0.80"
 - "VOC not to exceed 50 g/L" → "VOC Content: max 50 g/L"
+
+**MULTI-COMPONENT SYSTEMS:**
+
+Job specs may describe multiple components (Top Coat, Base Coat, Primer).
+- If multiple components with different requirements, prefix with component name:
+  "Top Coat - Tensile Strength", "Base Coat - Tensile Strength"
+- If one component, use standard names
+
+**BROKEN TABLE PARSING:**
+
+Property names and values may be on separate lines:
+```
+Tensile Strength
+284 psi
+ASTM D 2370
+```
+Treat as: {"Tensile Strength": "284 psi"}
+Scan 2-3 lines ahead when you find a property keyword.
 
 **INSTRUCTIONS:**
 

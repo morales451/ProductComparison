@@ -1,5 +1,158 @@
 # RoofSpec Matcher - Changelog
 
+## Version 1.2.1 (2026-01-13) - Real-World Spec Improvements
+
+### 🎯 Major Improvement: Enhanced Real-World Document Handling
+
+**Problem Solved:** Based on actual Sherman ISD job specification testing, the extraction now handles complex real-world patterns that were previously missed.
+
+**User Feedback Implemented:**
+- Multi-component system specifications (Base Coat, Top Coat, Primer)
+- Broken table parsing (properties and values on different lines)
+- Additional property name variations found in real specs
+- Range vs. minimum value handling
+
+### 🔧 Changes
+
+#### 1. Multi-Component System Handling (NEW)
+
+Job specifications often describe a SYSTEM with multiple components, not a single product.
+
+**Before:**
+- Extracted all metrics flatly, couldn't distinguish which component
+
+**After:**
+- Recognizes component headers ("Top Coat", "Base Coat", "Primer")
+- Prefixes metrics with component name when multiple components exist
+- Example: "Top Coat - Tensile Strength: 284 psi", "Base Coat - Tensile Strength: 200 psi"
+
+**Use Case:**
+Upload a job spec with both Base Coat and Top Coat requirements. Compare your single product against both to see which component spec it matches.
+
+#### 2. Broken Table Parsing (NEW)
+
+PDF text extraction often splits table rows across multiple lines.
+
+**Problem Example:**
+```
+Tensile Strength
+284 psi
+ASTM D 2370
+```
+
+**Before:** Might miss this pattern or fail to associate value with property
+
+**After:** Scans 2-3 lines ahead when finding a property keyword, associates value even when on different line
+
+#### 3. Expanded Property Variations
+
+Added real-world variations found in Sherman ISD spec:
+
+**Elongation:**
+- Added: "Elongation, Initial", "Percent Elongation at break"
+
+**Tensile Strength:**
+- Added: "Tensile Strength, Initial", "Tensile Strength, Aged"
+
+**Solar Reflectance:**
+- Added: "Reflectivity", "Solar Reflectance, Initial", "Reflectivity, Initial"
+
+**Solids:**
+- Added: "Solids Content by Volume", "% Solids by Vol", "Solids, by volume"
+- Added: "Solids Content by Weight", "% Solids by Wt", "Solids, by weight"
+
+#### 4. Range Handling Guidance (NEW)
+
+Added explicit instructions for handling ranges vs. exact values:
+- "50-54%" extracted as-is (not averaged)
+- "53%" extracted as-is
+- Comparison logic notes: "53%" within "50-54%" range is valid
+- Context awareness: Higher solids = better, Lower VOC = better
+
+### 📝 Technical Details
+
+**Files Modified:**
+- `app.py` - Added 66 lines of new instructions
+- `test_extraction.py` - Added abbreviated versions of same enhancements
+
+**Key Sections Added:**
+- "HANDLING MULTI-COMPONENT SYSTEMS" (lines 234-257)
+- "HANDLING BROKEN TABLE PARSING" (lines 259-280)
+- "HANDLING RANGES" (lines 282-298)
+- Enhanced property variation lists with comma-separated formats
+
+### 🎯 Impact on Real-World Usage
+
+**Before v1.2.1:**
+```json
+// Sherman ISD spec - missing component context
+{
+  "Tensile Strength": "284 psi"
+}
+// Could be Base Coat OR Top Coat - unclear!
+```
+
+**After v1.2.1:**
+```json
+// Sherman ISD spec - clear component identification
+{
+  "Top Coat - Tensile Strength": "284 psi",
+  "Base Coat - Tensile Strength": "200 psi",
+  "Primer - Volume Solids": "45%"
+}
+// Now you can see your product matches Top Coat requirements!
+```
+
+### 🧪 Testing
+
+Tested with:
+- Sherman ISD actual job specification
+- Multi-component roof coating systems
+- Various table formatting styles
+- Comma-separated property names
+
+### 📊 Examples
+
+**Multi-Component Example:**
+```
+Input Document:
+"2.02 ACRYLIC TOP COAT
+  Tensile Strength: 284 psi
+  Elongation: 550%
+
+2.03 ACRYLIC BASE COAT
+  Tensile Strength: 200 psi
+  Elongation: 400%"
+
+Output:
+{
+  "Top Coat - Tensile Strength": "284 psi",
+  "Top Coat - Elongation": "550%",
+  "Base Coat - Tensile Strength": "200 psi",
+  "Base Coat - Elongation": "400%"
+}
+```
+
+**Broken Table Example:**
+```
+Input (lines in PDF):
+Line 1: "Tensile Strength"
+Line 2: "284 psi"
+Line 3: "ASTM D 2370"
+
+Output:
+{"Tensile Strength": "284 psi"}
+```
+
+### 🔄 Backward Compatibility
+
+✅ All existing functionality preserved
+✅ Single-component specs work as before
+✅ No breaking changes to output format
+✅ Component prefixes only added when multiple components detected
+
+---
+
 ## Version 1.2.0 (2026-01-13) - Job Specification Support
 
 ### 🎯 Major New Feature: Job Specification Extraction

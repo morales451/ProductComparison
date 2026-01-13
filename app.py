@@ -118,21 +118,21 @@ You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of
 **TERMINOLOGY VARIATIONS - Treat these as THE SAME metric:**
 
 **Elongation variations:**
-- "Elongation (Initial)" = "Initial Elongation" = "Initial Percent Elongation" = "Elongation - Initial" = "Initial % Elongation"
-- "Elongation (Aged)" = "Aged Elongation" = "Aged Percent Elongation" = "Elongation - Aged"
-- "Elongation at Break" = "Elongation %" = "Percent Elongation" = "% Elongation"
+- "Elongation (Initial)" = "Initial Elongation" = "Initial Percent Elongation" = "Elongation - Initial" = "Initial % Elongation" = "Elongation, Initial" = "Percent Elongation at break"
+- "Elongation (Aged)" = "Aged Elongation" = "Aged Percent Elongation" = "Elongation - Aged" = "Elongation, Aged"
+- "Elongation at Break" = "Elongation %" = "Percent Elongation" = "% Elongation" = "Elongation"
 → Output as: "Elongation (Initial)", "Elongation (Aged)", or "Elongation at Break"
 
 **Tensile Strength variations:**
-- "Tensile Strength (Initial)" = "Initial Tensile Strength" = "Initial Tensile" = "Tensile - Initial"
-- "Tensile Strength (Aged)" = "Aged Tensile Strength" = "Aged Tensile" = "Tensile - Aged"
-- "Tensile Strength" = "Tensile" = "Ultimate Tensile Strength"
+- "Tensile Strength (Initial)" = "Initial Tensile Strength" = "Initial Tensile" = "Tensile - Initial" = "Tensile Strength, Initial"
+- "Tensile Strength (Aged)" = "Aged Tensile Strength" = "Aged Tensile" = "Tensile - Aged" = "Tensile Strength, Aged"
+- "Tensile Strength" = "Tensile" = "Ultimate Tensile Strength" = "Tensile Strength, Ultimate"
 → Output as: "Tensile Strength (Initial)", "Tensile Strength (Aged)", or "Tensile Strength"
 
 **Solar Reflectance variations:**
-- "Solar Reflectance (Initial)" = "Initial Solar Reflectance" = "Solar Reflectance - Initial" = "Initial Reflectance"
-- "Solar Reflectance (Aged)" = "Aged Solar Reflectance" = "Solar Reflectance - Aged" = "Aged Reflectance"
-- "Solar Reflectance" = "Reflectance" = "Solar Reflectivity" = "Reflectivity (Solar)"
+- "Solar Reflectance (Initial)" = "Initial Solar Reflectance" = "Solar Reflectance - Initial" = "Initial Reflectance" = "Solar Reflectance, Initial" = "Reflectivity, Initial"
+- "Solar Reflectance (Aged)" = "Aged Solar Reflectance" = "Solar Reflectance - Aged" = "Aged Reflectance" = "Solar Reflectance, Aged"
+- "Solar Reflectance" = "Reflectance" = "Solar Reflectivity" = "Reflectivity (Solar)" = "Reflectivity"
 → Output as: "Solar Reflectance (Initial)", "Solar Reflectance (Aged)", or "Solar Reflectance"
 
 **Thermal Emittance variations:**
@@ -142,8 +142,8 @@ You must use SEMANTIC MATCHING, not exact text matching. Look for the MEANING of
 → Output as: "Thermal Emittance (Initial)", "Thermal Emittance (Aged)", or "Thermal Emittance"
 
 **Solids variations:**
-- "Volume Solids" = "Vol Solids" = "Solids by Volume" = "% Volume Solids" = "Percent Volume Solids"
-- "Weight Solids" = "Wt Solids" = "Solids by Weight" = "% Weight Solids" = "Percent Weight Solids"
+- "Volume Solids" = "Vol Solids" = "Solids by Volume" = "% Volume Solids" = "Percent Volume Solids" = "Solids Content by Volume" = "% Solids by Vol" = "Solids, by volume"
+- "Weight Solids" = "Wt Solids" = "Solids by Weight" = "% Weight Solids" = "Percent Weight Solids" = "Solids Content by Weight" = "% Solids by Wt" = "Solids, by weight"
 → Output as: "Volume Solids" or "Weight Solids"
 
 **Permeability variations:**
@@ -231,6 +231,72 @@ Output JSON:
   "Thermal Emittance": "min 0.85"
 }
 
+**HANDLING MULTI-COMPONENT SYSTEMS:**
+
+Job specifications often describe a SYSTEM with multiple components (Base Coat, Top Coat, Primer), not a single product.
+
+**Component Recognition:**
+- Look for section headers like "Part 2 - Products", "Section 2.02", or subsections
+- Common component names: "Top Coat", "Base Coat", "Primer", "Finish Coat", "Cold Liquid Membrane", "Elastomeric Coating"
+- Each component may have different requirements
+
+**How to Handle:**
+1. If the document has MULTIPLE components with DIFFERENT requirements:
+   - Prefix metric names with component: "Top Coat - Tensile Strength", "Base Coat - Tensile Strength"
+   - This allows comparing a single product against multiple component specs
+
+2. If the document has ONE component or system-level requirements:
+   - Use standard metric names without prefix
+
+3. Example:
+   Input: Section describes "Acrylic Top Coat" with "Tensile: 284 psi" and "Acrylic Base Coat" with "Tensile: 200 psi"
+   Output:
+   {
+     "Top Coat - Tensile Strength": "284 psi",
+     "Base Coat - Tensile Strength": "200 psi"
+   }
+
+**HANDLING BROKEN TABLE PARSING:**
+
+PDF text extraction often breaks table rows across multiple lines. A property name and its value may be separated.
+
+**Pattern Recognition:**
+- Look for a property keyword (e.g., "Tensile Strength") followed closely by a number and unit on the NEXT line
+- The test method (e.g., "ASTM D 2370") might appear on a third line - ignore for extraction
+
+**Example:**
+Text appears as:
+```
+Tensile Strength
+284 psi
+ASTM D 2370
+```
+
+Treat this as ONE metric: {"Tensile Strength": "284 psi"}
+
+**Strategy:**
+- When you find a property keyword, scan the next 2-3 lines for a numeric value with units
+- Common units to look for: psi, %, perms, g/L, °F, °C, KU, lb/gal, sq ft/gal
+- If found, associate that value with the property
+
+**HANDLING RANGES:**
+
+Documents may use ranges for values (e.g., "50-54%") while specifications may state exact minimums (e.g., "53%").
+
+**Extraction Rules:**
+1. **Always extract ranges as-is**: "50-54%" not "52%"
+2. **Always extract exact values as-is**: "53%" not "50-54%"
+3. **Preserve both** - comparison logic will handle:
+   - Spec: "53%" vs Product: "50-54%" → Product range includes spec value ✅
+   - Spec: "min 50%" vs Product: "54%" → Product exceeds minimum ✅
+   - Spec: "max 50 g/L" vs Product: "35 g/L" → Product under maximum ✅
+
+**Context for Ranges:**
+- Volume/Weight Solids: Higher is usually better (more coverage)
+- VOC Content: Lower is better (less pollution)
+- Tensile/Elongation: Higher is usually better (stronger, more flexible)
+- Permeability: Depends on application (sometimes lower, sometimes higher)
+
 **INSTRUCTIONS:**
 
 1. **SEMANTIC MATCHING**: Look for variations in word order, synonyms, and abbreviations. If you see ANY variation of a metric name, extract it and normalize to the standard name above.
@@ -246,7 +312,7 @@ Output JSON:
    - If you see actual values without requirement language, it's a PRODUCT DATA SHEET → use values as-is
    - You may encounter BOTH types in one document!
 
-6. **Search thoroughly**: Check tables, bullet points, specifications sections, AND inline text. Requirements might be in paragraphs like "The coating shall have a minimum tensile strength of 300 psi" or in tables.
+6. **Search thoroughly**: Check tables, bullet points, specifications sections, AND inline text. Requirements might be in paragraphs like "The coating shall have a minimum tensile strength of 300 psi" or in tables. Remember that table values might be on separate lines from their property names - scan ahead when you find a property keyword.
 
 7. **Return normalized JSON**: Use the standardized names from the variations list above as keys
 

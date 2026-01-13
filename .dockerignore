@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation (include in image if needed, excluded for smaller image)
+README.md
+DEPLOYMENT.md
+*.md
+
+# Setup scripts (not needed in container)
+setup.sh
+setup.bat
+test_extraction.py
+
+# Streamlit secrets (use environment variables instead)
+.streamlit/secrets.toml
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Optional: Exclude sample PDFs if present
+# *.pdf
